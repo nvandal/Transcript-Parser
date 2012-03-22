@@ -1,7 +1,10 @@
-#!/usr/bin/perl -w -l
+#!/usr/bin/perl -wls
 use strict;
 use feature 'switch';
 use POSIX;
+
+our($weighted);
+if(not defined $weighted) {$weighted = 0;}
 
 sub uniq {
 	    return keys %{{ map { $_ => 1 } @_ }};
@@ -46,6 +49,7 @@ my $course_struct;
 my %grade_mapping_std = ('A',4,'B',3,'C',2,'D',1,'F',0);
 my %grade_mapping_ap = ('A',5,'B',4,'C',3,'D',2,'F',0);
 
+
 #main row loop
 while (<>) {
 
@@ -78,7 +82,7 @@ while (<>) {
 		when(/(^\d{6}) (.+?)  (\d.\d)  (.{3})  Gr(\d\d)  (\d\d\/\d\d\/\d\d)  (.*)/) {
 			$course_num = $1;
 			$course_name = $2;
-			$course_weight = $3;
+			$course_weight = $weighted ? $3 : 1.0; #Check to apply equal weighting or not
 			$course_score = $4;
 			$course_grade = $5;
 			$course_date = $6; #MM/DD/YY date format
@@ -95,8 +99,8 @@ while (<>) {
 			$course_score_num = defined($course_score_num) ?  $course_score_num : 0;
 
 			#Determine if this course should be part of the academic GPA
-			my @regex_list = map { qr{$_} } ('ALGEBRA','GEOMETRY');
-			if($course_name ~~ @regex_list)
+			#my @regex_list = map { qr{$_} } ('ALGEBRA','GEOMETRY');
+			#if($course_name ~~ @regex_list)
 			{
 				#Add to courses_taken hash -> new entry
 				if(not exists($courses_taken{$course_num})){
@@ -116,13 +120,12 @@ while (<>) {
 			
 			#Compute weighted GPA
 			while( ($course_num, $course_struct) = each %courses_taken){
-				print "$course_struct->{name} $course_struct->{weight} $course_struct->{score} $course_struct->{grade} $course_struct->{date}";
+				#print "$course_struct->{name} $course_struct->{weight} $course_struct->{score} $course_struct->{grade} $course_struct->{date}";
 				
 				#Add to apporiate sum
 				if($course_struct->{grade} =~ /09/){
 					$weight_sum += $course_struct->{weight};
 					$gpa += ($course_struct->{weight} * $course_struct->{score});
-					#$count += 1;
 				}
 			}
 			
@@ -130,7 +133,7 @@ while (<>) {
 				$gpa /= $weight_sum;
 			}
 			else{
-				$gpa = "-1.0";
+				$gpa = "N/A";
 			}
 			
 			#$gpa = sprintf("%.2f",$gpa);
