@@ -46,8 +46,8 @@ my $course_school_string;
 my %courses_taken;
 my $course_struct;
 
-my %grade_mapping_std = ('A',4,'B',3,'C',2,'D',1,'F',0);
-my %grade_mapping_ap = ('A',5,'B',4,'C',3,'D',2,'F',0);
+my %grade_mapping_std = ('A',4.0,'B',3.0,'C',2.0,'D',1.0,'F',0.0);
+my %grade_mapping_ap = ('A',5.0,'B',4.0,'C',3.0,'D',2.0,'F',0.0);
 
 
 #main row loop
@@ -88,7 +88,6 @@ while (<>) {
 			$course_date = $6; #MM/DD/YY date format
 			$course_school_string = $7; 
 		
-			#print "parsed $course_score";	
 			#Determine numeric score
 			if($course_name =~ /^AP .*/){ 
 				$course_score_num = $grade_mapping_ap{substr($course_score,0,1)};
@@ -96,18 +95,34 @@ while (<>) {
 			else{
 				$course_score_num = $grade_mapping_std{substr($course_score,0,1)};
 			}
-			$course_score_num = defined($course_score_num) ?  $course_score_num : 0;
+			
+			#Deal w/ invalid (ie. not A,B,C,D,F) scores
+			if(not defined($course_score_num)){
+				$course_score_num = 0.0;
+				$course_weight = 0.0;
+			}
 
 			#Determine if this course should be part of the academic GPA
 			#my @regex_list = map { qr{$_} } ('ALGEBRA','GEOMETRY');
 			#if($course_name ~~ @regex_list)
-			{
+			{	
+				my $rec = {name => $course_name, weight => $course_weight, score => $course_score_num, grade => $course_grade, date => $course_date};
+				
 				#Add to courses_taken hash -> new entry
 				if(not exists($courses_taken{$course_num})){
-					$courses_taken{$course_num} = {name => $course_name, weight => $course_weight, score => $course_score_num, grade => $course_grade, date => $course_date};
+					$courses_taken{$course_num} = ();
+					push @{$courses_taken{$course_num}},$rec
 				}
-				else { #Same course already exists -> keep more recent date (top of file), but update to older grade (bottom of file, parsed later){	
-					$courses_taken{$course_num}->{grade}=$course_grade;
+				else { 
+					#Same course already exists -> keep more recent date (top of file), but update to older grade (bottom of file, parsed later)
+					#Only allowed if previously taken course was a D/F, otherwise don't replace, but just add an additonal instance
+					if(not substr($course_score,0,1) =~ /[D|F]/){
+						#print "push $course_name!";
+						push @{$courses_taken{$course_num}},$rec
+					}
+					else{
+						$courses_taken{$course_num}[-1]{grade}=$course_grade;
+					}
 				}
 			}
 
@@ -117,15 +132,25 @@ while (<>) {
 		when(/^Date Printed: (\d\d\/\d\d\/\d\d)/){
 			my $gpa = 0.0;
 			my $weight_sum = 0.0;
+			my $course_array;
+
+			#Compute weighted GPA...
 			
-			#Compute weighted GPA
-			while( ($course_num, $course_struct) = each %courses_taken){
-				#print "$course_struct->{name} $course_struct->{weight} $course_struct->{score} $course_struct->{grade} $course_struct->{date}";
+			print "****$id_num $name_string $birth_date_string $gender $grade_current $gpa";
+			#Iterate over all course numbers
+			while( ($course_num, $course_array) = each %courses_taken){
 				
-				#Add to apporiate sum
-				if($course_struct->{grade} =~ /09/){
-					$weight_sum += $course_struct->{weight};
-					$gpa += ($course_struct->{weight} * $course_struct->{score});
+				#Iterate over all courses w/ same course number, ie. were not retakes
+				foreach $course_struct (@{$course_array})
+				{
+				
+					#Add to apporiate sum
+					if($course_struct->{grade} =~ /10/){
+
+						print "$course_struct->{name} $course_struct->{weight} $course_struct->{score} $course_struct->{grade} $course_struct->{date}";
+						$weight_sum += $course_struct->{weight};
+						$gpa += ($course_struct->{weight} * $course_struct->{score});
+					}
 				}
 			}
 			
