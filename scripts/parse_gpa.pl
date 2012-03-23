@@ -3,10 +3,38 @@ use strict;
 use feature 'switch';
 use POSIX;
 
+
 #Command line switches
-our($W, $T); #Weighted, interval_string
+our($W, $T, $A, $h); #Weighted, interval_string, academic_course_file
 if(not defined $W) {$W = 0;}
-if(not defined $T) {$T= 'C/CA';}
+if(not defined $T) {$T = 'C';}
+if(not defined $A) {$A = '';}
+
+if ( @ARGV <= 0 or $h)
+{
+	print "parse_gpa.pl\n";
+	print "\n";
+	print "Perl script to parse raw transcript file and compute GPAs\n";
+	print "\n";
+	print "Copyright: 2012 Nicholas Vandal\n";
+	print "There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n";
+	print "FITNESS FOR A PARTICULAR PURPOSE.\n";
+	print "\n";
+	print "usage: parse_gpa [arguments] file\n";
+	print "\n";
+	print "Arguments:\n";
+   	print "   -W\t\t\tWeigh courses by their credit hours instead of equally (disabled by default)\n";
+	print "   -T <intervals>\tSpecify intervals to compute GPA over (default: all courses, cumulative)\n";
+	print "   -A <file>\t\tSpecify file containing lists of courses to be used for the academic GPA\n";
+	print "\n";
+	print "\n";
+	print "Examples:\n";
+	print "   ./parse_gpa.pl input/raw.txt\n";
+	print "   ./parse_gpa.pl -A='input/selected.txt' -T='09/09A/F10/S10A/C0910/C080910A/C/CA' input/raw.txt\n";
+	print "\n";
+
+	exit 0;
+}
 
 my $id_num;
 my $name_string;
@@ -27,20 +55,28 @@ my $course_school_string;
 my %courses_taken;
 my $course_struct;
 
+#Required maps
 my %grade_mapping_std = ('A',4.0,'B',3.0,'C',2.0,'D',1.0,'F',0.0);
 my %grade_mapping_ap = ('A',5.0,'B',4.0,'C',3.0,'D',2.0,'F',0.0);
 my %semester_map = ('01','F','02','F','03','F','04','S','05','S','06','S','07','S','08','S','09','S','10','F','11','F','12','F');
 
-
 #Parse the interval list
 my @interval_list = split(/[^A|^F|^S|^C|^\d]/,$T);
-foreach(@interval_list)
-{
-	print "<$_>\n";
-}
 
-#Sample data...TODO will be passed in as cmdline argument
-my @ac_course_list = ("230109","361401","230110","310402","361402","370128","310401","370127","310301","360701","230108","310302","360702","230107");
+#Parse the academic course spec file
+my @ac_course_list=();
+if(length($A))
+{
+	open FILE, "<", $A or die $!;
+	while (<FILE>)
+	{
+		chomp;
+		while($_ =~ /(\d{6})/g)
+		{
+			push @ac_course_list,$1;
+		}
+	}
+}
 
 sub round_gpa
 {
