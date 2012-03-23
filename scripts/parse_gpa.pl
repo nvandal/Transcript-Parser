@@ -1,31 +1,11 @@
-#!/usr/bin/perl -wls
+#!/usr/bin/perl -ws
 use strict;
 use feature 'switch';
 use POSIX;
 
+#Command line switches
 our($weighted);
 if(not defined $weighted) {$weighted = 0;}
-
-sub uniq {
-	    return keys %{{ map { $_ => 1 } @_ }};
-    }
-
-sub date_cmp {
-	(my $month0, my $day0, my $year0) = split(/\//,$_[0]);
-	(my $month1, my $day1, my $year1) = split(/\//,$_[1]);
-	if($year0 < $year1) { return 1; }
-	elsif($year1 < $year0) { return -1;}
-	else{
-		if($month0 < $month1) { return 1;}
-		elsif($month1 < $month0) { return -1; }
-		else{
-			if($day0 < $day1) { return 1; }
-			elsif($day1 < $day0) {return -1;}
-		       	else { return 0; }	
-		}
-	}
-}
-
 
 my $id_num;
 my $name_string;
@@ -48,7 +28,18 @@ my $course_struct;
 
 my %grade_mapping_std = ('A',4.0,'B',3.0,'C',2.0,'D',1.0,'F',0.0);
 my %grade_mapping_ap = ('A',5.0,'B',4.0,'C',3.0,'D',2.0,'F',0.0);
+my %semester_map = ('01','F','02','F','03','F','04','S','05','S','06','S','07','S','08','S','09','S','10','F','11','F','12','F');
 
+my @interval_list = ('F09','S09','09','F10','S10','10');
+
+
+sub round_gpa
+{
+	if($_[0] =~ m/^\d+.\d+$/){
+		return sprintf("%.2f",$_[0]);
+	}
+	return "N/A";
+}
 
 #main row loop
 while (<>) {
@@ -102,73 +93,105 @@ while (<>) {
 				$course_weight = 0.0;
 			}
 
-			#Determine if this course should be part of the academic GPA
-			#my @regex_list = map { qr{$_} } ('ALGEBRA','GEOMETRY');
-			#if($course_name ~~ @regex_list)
-			{	
-				my $rec = {name => $course_name, weight => $course_weight, score => $course_score_num, grade => $course_grade, date => $course_date};
 				
-				#Add to courses_taken hash -> new entry
-				if(not exists($courses_taken{$course_num})){
-					$courses_taken{$course_num} = ();
+			my $rec = {name => $course_name, weight => $course_weight, score => $course_score_num, grade => $course_grade, date => $course_date};
+				
+			#Add to courses_taken hash -> new entry
+			if(not exists($courses_taken{$course_num})){
+				$courses_taken{$course_num} = ();
+				push @{$courses_taken{$course_num}},$rec
+			}
+			else { 
+				#Same course already exists -> keep more recent date (top of file), but update to older grade (bottom of file, parsed later)
+				#Only allowed if previously taken course was a D/F, otherwise don't replace, but just add an additonal instance
+				if(not substr($course_score,0,1) =~ /[D|F]/){
 					push @{$courses_taken{$course_num}},$rec
 				}
-				else { 
-					#Same course already exists -> keep more recent date (top of file), but update to older grade (bottom of file, parsed later)
-					#Only allowed if previously taken course was a D/F, otherwise don't replace, but just add an additonal instance
-					if(not substr($course_score,0,1) =~ /[D|F]/){
-						#print "push $course_name!";
-						push @{$courses_taken{$course_num}},$rec
-					}
-					else{
-						$courses_taken{$course_num}[-1]{grade}=$course_grade;
-					}
+				else{
+					#Update grade_year and date...need both to determine semester
+					$courses_taken{$course_num}[-1]{date}=$course_date;
+					$courses_taken{$course_num}[-1]{grade}=$course_grade;
 				}
 			}
-
 		}
 
 		#Finalize student
 		when(/^Date Printed: (\d\d\/\d\d\/\d\d)/){
-			my $gpa = 0.0;
-			my $weight_sum = 0.0;
+
 			my $course_array;
+			my $current_interval;
+
+			#Intialize gpa accumulators
+			my %ov_gpa = ();
+			my %ov_weight_sum = ();
+			my %ac_gpa = ();
+			my %ac_weight_sum = ();
+			my %ov_gpa_round = ();
+			my %ac_gpa_round = ();
+			foreach(@interval_list){
+				$ov_gpa{$_}=0.0;
+				$ac_gpa{$_}=0.0;
+				$ov_weight_sum{$_}=0.0;
+				$ac_weight_sum{$_}=0.0;
+			}
 
 			#Compute weighted GPA...
 			
-			print "****$id_num $name_string $birth_date_string $gender $grade_current $gpa";
+			#print "****$id_num $name_string $birth_date_string $gender $grade_current $gpa";
 			#Iterate over all course numbers
-			while( ($course_num, $course_array) = each %courses_taken){
+			while( ($course_num, $course_array) = each %courses_taken)
+			{
 				
 				#Iterate over all courses w/ same course number, ie. were not retakes
 				foreach $course_struct (@{$course_array})
 				{
-				
-					#Add to apporiate sum
-					if($course_struct->{grade} =~ /10/){
+					#Determine if is an ACADEMIC course
+					#TODO
+					
+					#Iterate over all time intervals 
+					foreach  $current_interval (@interval_list)
+					{
+						#Parse interval format and extract semester/year
+						if($current_interval =~ m/([F|S]?)(\d\d)/)
+						{
+							my $current_sem = $1;
+							my $current_year = $2;
+							
+							#Match grade_year?
+							if($course_struct->{grade} =~ $current_year)
+							{
+								#Semesters match, or full academic year
+								if((not length($current_sem)) || (length($current_sem) and ($semester_map{substr($course_struct->{date},0,2)} =~ $current_sem)))
+								{
+									#Add to appropriate running sum	
+									$ov_gpa{$current_interval} += ($course_struct->{weight} * $course_struct->{score});
+									$ov_weight_sum{$current_interval} += $course_struct->{weight};
+								}
 
-						print "$course_struct->{name} $course_struct->{weight} $course_struct->{score} $course_struct->{grade} $course_struct->{date}";
-						$weight_sum += $course_struct->{weight};
-						$gpa += ($course_struct->{weight} * $course_struct->{score});
+							}
+						}
 					}
 				}
 			}
-			
-			if($weight_sum > 0.0){
-				$gpa /= $weight_sum;
+		
+			#Iterate over all intervals
+			foreach  $current_interval (@interval_list)
+			{
+				$ov_gpa{$current_interval} = ($ov_weight_sum{$current_interval} > 0.0) ? $ov_gpa{$current_interval}/$ov_weight_sum{$current_interval} : "N/A";
+				
+				#Round gpa
+				$ov_gpa_round{$current_interval} = round_gpa($ov_gpa{$current_interval});
+
 			}
-			else{
-				$gpa = "N/A";
-			}
-			
-			#$gpa = sprintf("%.2f",$gpa);
-			print "$id_num $name_string $birth_date_string $gender $grade_current $gpa";
+		
+			print "$id_num $name_string  $grade_current ";
+			print map { "$ov_gpa_round{$_} " } @interval_list;
+			print "\n";
 		}
-	}
-	
+	}	
     } 
     continue 
     {
       close ARGV if eof;
-	}
+    }
       
