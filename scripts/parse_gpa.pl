@@ -30,12 +30,13 @@ my %grade_mapping_std = ('A',4.0,'B',3.0,'C',2.0,'D',1.0,'F',0.0);
 my %grade_mapping_ap = ('A',5.0,'B',4.0,'C',3.0,'D',2.0,'F',0.0);
 my %semester_map = ('01','F','02','F','03','F','04','S','05','S','06','S','07','S','08','S','09','S','10','F','11','F','12','F');
 
-my @interval_list = ('F09','S09','09','F10','S10','10');
-
+#Sample data...TODO will be passed in as cmdline argument
+my @interval_list = ('F09','F09A','S09','S09A','09','09A','F10','F10A','S10','S10A','10','10A','C','CA');
+my @ac_course_list = ("230109","361401","230110","310402","361402","370128","310401","370127","310301","360701","230108","310302","360702","230107");
 
 sub round_gpa
 {
-	if($_[0] =~ m/^\d+.\d+$/){
+	if($_[0] =~ m/^(?!N\/A$)/){
 		return sprintf("%.2f",$_[0]);
 	}
 	return "N/A";
@@ -124,15 +125,10 @@ while (<>) {
 			#Intialize gpa accumulators
 			my %ov_gpa = ();
 			my %ov_weight_sum = ();
-			my %ac_gpa = ();
-			my %ac_weight_sum = ();
 			my %ov_gpa_round = ();
-			my %ac_gpa_round = ();
 			foreach(@interval_list){
 				$ov_gpa{$_}=0.0;
-				$ac_gpa{$_}=0.0;
 				$ov_weight_sum{$_}=0.0;
-				$ac_weight_sum{$_}=0.0;
 			}
 
 			#Compute weighted GPA...
@@ -142,30 +138,46 @@ while (<>) {
 			while( ($course_num, $course_array) = each %courses_taken)
 			{
 				
+				#Determine if is an ACADEMIC course
+				my $is_academic_course = ($course_num ~~ @ac_course_list) ? 1 : 0;
+				
 				#Iterate over all courses w/ same course number, ie. were not retakes
 				foreach $course_struct (@{$course_array})
 				{
-					#Determine if is an ACADEMIC course
-					#TODO
-					
+
 					#Iterate over all time intervals 
 					foreach  $current_interval (@interval_list)
 					{
+						#Cumulative overall/academic
+						if($current_interval =~ m/C([A|O]?)/)
+						{
+							my $academic_interval = $1;
+
+							if((length($academic_interval) == 0) or ($academic_interval =~"O") or ($is_academic_course and ($academic_interval =~ "A"))){	                                                                                $ov_gpa{$current_interval} += ($course_struct->{weight} * $course_struct->{score});
+		                                            $ov_weight_sum{$current_interval} += $course_struct->{weight};
+						     	}
+						}
 						#Parse interval format and extract semester/year
-						if($current_interval =~ m/([F|S]?)(\d\d)/)
+						elsif($current_interval =~ m/([F|S]?)(\d\d)([A|O]?)/)
 						{
 							my $current_sem = $1;
 							my $current_year = $2;
-							
+							my $academic_interval = $3;
+						
+
 							#Match grade_year?
 							if($course_struct->{grade} =~ $current_year)
 							{
 								#Semesters match, or full academic year
 								if((not length($current_sem)) || (length($current_sem) and ($semester_map{substr($course_struct->{date},0,2)} =~ $current_sem)))
 								{
-									#Add to appropriate running sum	
-									$ov_gpa{$current_interval} += ($course_struct->{weight} * $course_struct->{score});
-									$ov_weight_sum{$current_interval} += $course_struct->{weight};
+									#Academic or overall?	
+									if((length($academic_interval) == 0) or ($academic_interval =~"O") or ($is_academic_course and ($academic_interval =~ "A"))){
+										$ov_gpa{$current_interval} += ($course_struct->{weight} * $course_struct->{score});
+										$ov_weight_sum{$current_interval} += $course_struct->{weight};
+										
+										#print "ADDED $course_struct->{name} to $current_interval. gpasum = $ov_gpa{$current_interval}, weightsum = $ov_weight_sum{$current_interval}";
+									}
 								}
 
 							}
