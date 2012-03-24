@@ -254,8 +254,8 @@ while (<>) {
 
 			}
 		
-			print "$id_num $name_string  $grade_current ";
-			print map { "$ov_gpa_round{$_} " } @interval_list;
+			print "$id_num|$name_string|$grade_current|";
+			print map { "$ov_gpa_round{$_}|" } @interval_list;
 			print "\n";
 		}
 	}	
