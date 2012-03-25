@@ -1,4 +1,9 @@
 #!/usr/bin/perl -ws
+
+#parse_gpa.pl
+#Copyright: Nick Vandal 2009
+#Calculates GPAs from a transcripts
+
 use strict;
 use feature 'switch';
 use POSIX;
