@@ -10,10 +10,11 @@ use POSIX;
 
 
 #Command line switches
-our($W, $T, $A, $h); #Weighted, interval_string, academic_course_file
+our($W, $T, $A, $M, $h); #Weighted, interval_string, academic_course_file, minWeight
 if(not defined $W) {$W = 0;}
 if(not defined $T) {$T = 'C';}
 if(not defined $A) {$A = '';}
+if(not defined $M) {$M = 0;}
 
 if ( @ARGV <= 0 or $h)
 {
@@ -29,13 +30,15 @@ if ( @ARGV <= 0 or $h)
 	print "\n";
 	print "Arguments:\n";
    	print "   -W\t\t\tWeigh courses by their credit hours instead of equally (disabled by default)\n";
-	print "   -T <intervals>\tSpecify intervals to compute GPA over (default: all courses, cumulative)\n";
-	print "   -A <file>\t\tSpecify file containing lists of courses to be used for the academic GPA\n";
+	print "   -T=<intervals>\tSpecify intervals to compute GPA over (default: all courses, cumulative)\n";
+	print "   -A=<file>\t\tSpecify file containing lists of courses to be used for the academic GPA\n";
+	print "   -M=<minweight>\tSpeciy minimum course weight required for course to be included in the academic GPA\n";
 	print "\n";
 	print "\n";
 	print "Examples:\n";
 	print "   ./parse_gpa.pl input/raw.txt\n";
 	print "   ./parse_gpa.pl -A='input/selected.txt' -T='09/09A/F10/S10A/C0910/C080910A/C/CA' input/raw.txt\n";
+	print "   ./parse_gpa.pl -A=input/selected.txt -T='F07A/S07A/F07/S07/F08A/S08A/F08/S08/F09A/S09A/F09/S09/F10A/S10A/F10/S10/' -M=5.0 input/raw.txt > output/out.txt\n";
 	print "\n";
 
 	exit 0;
@@ -123,7 +126,7 @@ while (<>) {
 		when(/(^\d{6}) (.+?)  (\d.\d)  (.{3})  Gr(\d\d)  (\d\d\/\d\d\/\d\d)  (.*)/) {
 			$course_num = $1;
 			$course_name = $2;
-			$course_weight = $W ? $3 : 1.0; #Check to apply equal weighting or not
+			$course_weight = $3;
 			$course_score = $4;
 			$course_grade = $5;
 			$course_date = $6; #MM/DD/YY date format
@@ -188,11 +191,12 @@ while (<>) {
 			{
 				
 				#Determine if is an ACADEMIC course
-				my $is_academic_course = ($course_num ~~ @ac_course_list) ? 1 : 0;
+				my $is_academic_course = ($course_num ~~ @ac_course_list)? 1 : 0;
 				
 				#Iterate over all courses w/ same course number, ie. were not retakes
 				foreach $course_struct (@{$course_array})
 				{
+					my $effective_weight = ($W or ($course_struct->{weight} == 0.0)) ? $course_struct->{weight} : 1.0; #Use contant weight? (Zero weight overides this)
 
 					#Iterate over all time intervals 
 					foreach  $current_interval (@interval_list)
@@ -208,9 +212,9 @@ while (<>) {
 							{
 								
 								#Academic or overall?	
-								if((length($academic_interval) == 0) or ($academic_interval =~"O") or ($is_academic_course and ($academic_interval =~ "A"))){
-									$ov_gpa{$current_interval} += ($course_struct->{weight} * $course_struct->{score});
-									$ov_weight_sum{$current_interval} += $course_struct->{weight};
+								if((length($academic_interval) == 0) or ($academic_interval =~"O") or ($is_academic_course and ($course_struct->{weight} >= $M) and ($academic_interval =~ "A"))){
+									$ov_gpa{$current_interval} += ($effective_weight * $course_struct->{score});
+									$ov_weight_sum{$current_interval} += $effective_weight;
 									
 								}
 
@@ -231,9 +235,9 @@ while (<>) {
 								if((not length($current_sem)) || (length($current_sem) and ($semester_map{substr($course_struct->{date},0,2)} =~ $current_sem)))
 								{
 									#Academic or overall?	
-									if((length($academic_interval) == 0) or ($academic_interval =~"O") or ($is_academic_course and ($academic_interval =~ "A"))){
-										$ov_gpa{$current_interval} += ($course_struct->{weight} * $course_struct->{score});
-										$ov_weight_sum{$current_interval} += $course_struct->{weight};
+									if((length($academic_interval) == 0) or ($academic_interval =~"O") or ($is_academic_course and ($course_struct->{weight} >= $M) and ($academic_interval =~ "A"))){
+										$ov_gpa{$current_interval} += ($effective_weight * $course_struct->{score});
+										$ov_weight_sum{$current_interval} += $effective_weight;
 										
 									}
 								}
@@ -259,7 +263,7 @@ while (<>) {
 
 			}
 		
-			print "$id_num|$name_string|$grade_current|";
+			print "$id_num|$name_string|$birth_date_string|";
 			print map { "$ov_gpa_round{$_}|" } @interval_list;
 			print "\n";
 		}
