@@ -10,11 +10,12 @@ use POSIX;
 
 
 #Command line switches
-our($W, $T, $A, $M, $h); #Weighted, interval_string, academic_course_file, minWeight
+our($W, $T, $A, $M, $NR, $h); #Weighted, interval_string, academic_course_file, minWeight, noReplacement
 if(not defined $W) {$W = 0;}
 if(not defined $T) {$T = 'C';}
 if(not defined $A) {$A = '';}
 if(not defined $M) {$M = 0;}
+if(not defined $NR) {$NR = 0;}
 
 if ( @ARGV <= 0 or $h)
 {
@@ -32,7 +33,8 @@ if ( @ARGV <= 0 or $h)
    	print "   -W\t\t\tWeigh courses by their credit hours instead of equally (disabled by default)\n";
 	print "   -T=<intervals>\tSpecify intervals to compute GPA over (default: all courses, cumulative)\n";
 	print "   -A=<file>\t\tSpecify file containing lists of courses to be used for the academic GPA\n";
-	print "   -M=<minweight>\tSpeciy minimum course weight required for course to be included in the academic GPA\n";
+	print "   -M=<minweight>\tSpeciy minimum course weight required for course to be included in the academic GPA (0.0 by default)\n";
+	print "   -NR\t\t\t(N)o (R)eplacement. Retaken courses do not replace the grades of previously failed/unsat courses\n";
 	print "\n";
 	print "\n";
 	print "Examples:\n";
@@ -156,8 +158,8 @@ while (<>) {
 			}
 			else { 
 				#Same course already exists -> keep more recent date (top of file), but update to older grade (bottom of file, parsed later)
-				#Only allowed if previously taken course was a D/F, otherwise don't replace, but just add an additonal instance
-				if(not substr($course_score,0,1) =~ /[D|F]/){
+				#Only allowed if noReplacement is false and previously taken course was a D/F, otherwise don't replace, but just add an additonal instance
+				if($NR or (not substr($course_score,0,1) =~ /[D|F]/) ){
 					push @{$courses_taken{$course_num}},$rec
 				}
 				else{
