@@ -64,6 +64,8 @@ my $course_date;
 my $course_school_string;
 my %courses_taken;
 my $course_struct;
+my %semester_groups;
+my $course_ref;
 
 #Required maps
 my %grade_mapping_std = ('A',4.0,'B',3.0,'C',2.0,'D',1.0,'F',0.0);
@@ -106,6 +108,7 @@ while (<>) {
 		when(/^TR10.*ID (\d{6}[M|F]\d{3})/){
 			#Clear the courses_taken hash
 			%courses_taken = ();
+			%semester_groups = ();
 
 			#Parse student ID number
 			$id_num = $1;
@@ -133,7 +136,7 @@ while (<>) {
 			$course_grade = $5;
 			$course_date = $6; #MM/DD/YY date format
 			$course_school_string = $7; 
-		
+	
 			#Determine numeric score
 			if($course_name =~ /^AP .*/){ 
 				$course_score_num = $grade_mapping_ap{substr($course_score,0,1)};
@@ -154,20 +157,30 @@ while (<>) {
 			#Add to courses_taken hash -> new entry
 			if(not exists($courses_taken{$course_num})){
 				$courses_taken{$course_num} = ();
-				push @{$courses_taken{$course_num}},$rec
+				push @{$courses_taken{$course_num}},$rec;
+				$course_ref = \($courses_taken{$course_num}[-1]); 
 			}
 			else { 
 				#Same course already exists -> keep more recent date (top of file), but update to older grade (bottom of file, parsed later)
-				#Only allowed if noReplacement is false and previously taken course was a D/F, otherwise don't replace, but just add an additonal instance
-				if($NR or (not substr($course_score,0,1) =~ /[D|F]/) ){
-					push @{$courses_taken{$course_num}},$rec
+				#Only allowed if noReplacement is false and previously taken course was a C/D/F, otherwise don't replace, but just add an additonal instance
+				if($NR or (not substr($course_score,0,1) =~ /[D|F|C]/) ){
+					push @{$courses_taken{$course_num}},$rec;
+					$course_ref = \($courses_taken{$course_num}[-1]); 
 				}
 				else{
 					#Update grade_year and date...need both to determine semester
 					$courses_taken{$course_num}[-1]{date}=$course_date;
 					$courses_taken{$course_num}[-1]{grade}=$course_grade;
+					$course_ref = undef;
 				}
 			}
+
+			#Add reference to course to semester grouping hash
+			if(not exists($semester_groups{$course_date})){
+		                $semester_groups{$course_date} = ();
+			}
+			push @{$semester_groups{$course_date}},$course_ref;
+			
 		}
 
 		#Finalize student
@@ -184,6 +197,24 @@ while (<>) {
 				$ov_gpa{$_}=0.0;
 				$ov_weight_sum{$_}=0.0;
 			}
+			
+			#Convert semester grouping -> effective grade level of student
+		
+			while( ($course_date, $course_array) = each %semester_groups)
+			{
+				print "$course_date $course_array\n";
+				foreach $course_ref (@{$course_array})
+				{
+					if(defined $course_ref)
+					{
+						$course_struct = $$course_ref;
+						print ">>> $course_struct->{grade}\n";
+					}
+				}
+			}
+
+
+
 
 			#Compute weighted GPA...
 			
