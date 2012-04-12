@@ -15,7 +15,7 @@ if(not defined $W) {$W = 0;}
 if(not defined $T) {$T = 'C';}
 if(not defined $A) {$A = '';}
 if(not defined $M) {$M = 0;}
-if(not defined $NR) {$NR = 0;}
+if(not defined $NR) {$NR = '';}
 
 if ( @ARGV <= 0 or $h)
 {
@@ -34,13 +34,13 @@ if ( @ARGV <= 0 or $h)
 	print "   -T=<intervals>\tSpecify intervals to compute GPA over (default: all courses, cumulative)\n";
 	print "   -A=<file>\t\tSpecify file containing lists of courses to be used for the academic GPA\n";
 	print "   -M=<minweight>\tSpeciy minimum course weight required for course to be included in the academic GPA (0.0 by default)\n";
-	print "   -NR\t\t\t(N)o (R)eplacement. Retaken courses do not replace the grades of previously failed/unsat courses\n";
+	print "   -NR=[file]\t\tSpecify file containing courses which do not replace the grades of those previously taken. If no file specified, no replacements are made (disabled by default)\n";
 	print "\n";
 	print "\n";
 	print "Examples:\n";
 	print "   ./parse_gpa.pl input/raw.txt\n";
 	print "   ./parse_gpa.pl -A='input/selected.txt' -T='09/09A/F10/S10A/C0910/C080910A/C/CA' input/raw.txt\n";
-	print "   ./parse_gpa.pl -A=input/selected.txt -T='F07A/S07A/F07/S07/F08A/S08A/F08/S08/F09A/S09A/F09/S09/F10A/S10A/F10/S10/' -M=5.0 input/raw.txt > output/out.txt\n";
+	print "   ./parse_gpa.pl -A=input/selected.txt -NR=input/noreplace.txt -T='F07A/S07A/F07/S07/F08A/S08A/F08/S08/F09A/S09A/F09/S09/F10A/S10A/F10/S10/' -M=5.0 input/raw.txt > output/out.txt\n";
 	print "\n";
 
 	exit 0;
@@ -61,6 +61,7 @@ my $course_score;
 my $course_score_num;
 my $course_grade;
 my $course_date;
+my $course_semester;
 my $course_school_string;
 my %courses_taken;
 my $course_struct;
@@ -88,6 +89,38 @@ if(length($A))
 			push @ac_course_list,$1;
 		}
 	}
+	close FILE;
+}
+
+
+#Parse the noreplacement course spec file
+my @nr_course_list=();
+my $nr_all;
+if($NR =~ /^(0|false)$/)
+{
+	$nr_all = 0;
+}
+elsif($NR =~ /^(1|true)$/)
+{
+	$nr_all = 1;
+}
+elsif(length($NR))
+{
+	$nr_all = 0;
+	open FILE, "<", $NR or die $!;
+	while (<FILE>)
+	{
+		chomp;
+		while($_ =~ /(\d{6})/g)
+		{
+			push @nr_course_list,$1;
+		}
+	}
+	close FILE;
+}
+else
+{
+	$nr_all = 0;
 }
 
 sub round_gpa
@@ -136,7 +169,8 @@ while (<>) {
 			$course_grade = $5;
 			$course_date = $6; #MM/DD/YY date format
 			$course_school_string = $7; 
-	
+			$course_semester = $semester_map{substr($course_date,0,2)};
+
 			#Determine numeric score
 			if($course_name =~ /^AP .*/){ 
 				$course_score_num = $grade_mapping_ap{substr($course_score,0,1)};
@@ -151,8 +185,7 @@ while (<>) {
 				$course_weight = 0.0;
 			}
 
-				
-			my $rec = {name => $course_name, weight => $course_weight, score => $course_score_num, grade => $course_grade, date => $course_date};
+			my $rec = {name => $course_name, weight => $course_weight, score => $course_score_num, grade => $course_grade, date => $course_date, semester => $course_semester};
 				
 			#Add to courses_taken hash -> new entry
 			if(not exists($courses_taken{$course_num})){
@@ -163,7 +196,7 @@ while (<>) {
 			else { 
 				#Same course already exists -> keep more recent date (top of file), but update to older grade (bottom of file, parsed later)
 				#Only allowed if noReplacement is false and previously taken course was a C/D/F, otherwise don't replace, but just add an additonal instance
-				if($NR or (not substr($course_score,0,1) =~ /[D|F|C]/) ){
+				if($nr_all or (not substr($course_score,0,1) =~ /[D|F|C]/) or ($course_num ~~ @nr_course_list) ){
 					push @{$courses_taken{$course_num}},$rec;
 					$course_ref = \($courses_taken{$course_num}[-1]); 
 				}
@@ -171,6 +204,7 @@ while (<>) {
 					#Update grade_year and date...need both to determine semester
 					$courses_taken{$course_num}[-1]{date}=$course_date;
 					$courses_taken{$course_num}[-1]{grade}=$course_grade;
+					$courses_taken{$course_num}[-1]{semester}=$course_semester;
 					$course_ref = undef;
 				}
 			}
@@ -208,7 +242,7 @@ while (<>) {
 					if(defined $course_ref)
 					{
 						$course_struct = $$course_ref;
-						print ">>> $course_struct->{grade}\n";
+						print ">>> $course_struct->{name} $course_struct->{grade} $course_struct->{date} $course_struct->{semester}\n";
 					}
 				}
 			}
@@ -225,6 +259,7 @@ while (<>) {
 				
 				#Determine if is an ACADEMIC course
 				my $is_academic_course = ($course_num ~~ @ac_course_list)? 1 : 0;
+				
 				
 				#Iterate over all courses w/ same course number, ie. were not retakes
 				foreach $course_struct (@{$course_array})
@@ -265,7 +300,7 @@ while (<>) {
 							if($course_struct->{grade} =~ $current_year)
 							{
 								#Semesters match, or full academic year
-								if((not length($current_sem)) || (length($current_sem) and ($semester_map{substr($course_struct->{date},0,2)} =~ $current_sem)))
+								if((not length($current_sem)) || (length($current_sem) and  ($course_struct->{semester} =~ $current_sem)))
 								{
 									#Academic or overall?	
 									if((length($academic_interval) == 0) or ($academic_interval =~"O") or ($is_academic_course and ($course_struct->{weight} >= $M) and ($academic_interval =~ "A"))){
