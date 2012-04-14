@@ -8,7 +8,6 @@ use strict;
 use feature 'switch';
 use POSIX;
 
-
 #Command line switches
 our($W, $T, $A, $M, $NR, $NS, $FR, $NG, $h); #Weighted, interval_string, academic_course_file, minWeight, noReplacement
 if(not defined $W) {$W = 0;}
@@ -19,7 +18,7 @@ if(not defined $NR) {$NR = '';}
 if(not defined $NS) {$NS = 0;}
 if(not defined $NG) {$NG = 0;}
 
-print "NG=$NG\n\n";
+#print "NG=$NG\n\n";
 
 if ( @ARGV <= 0 or $h)
 {
@@ -67,6 +66,7 @@ my $course_name;
 my $course_weight;
 my $course_score;
 my $course_score_num;
+my $course_score_letter;
 my $course_grade;
 my $course_date;
 my $course_semester;
@@ -84,7 +84,7 @@ my @summer_interval = ('05','09'); #[may sep] inclusive
 my $max_summer_courses = 3;
 
 #Parse the interval list
-my @interval_list = split(/[^A|^F|^S|^C|^\d]/,$T);
+my @interval_list = split(/[^A|^F|^R|^S|^C|^\d]/,$T);
 
 #Parse the academic course spec file
 my @ac_course_list=();
@@ -102,6 +102,36 @@ if(length($A))
 	close FILE;
 }
 
+
+#Parse the failonly replace course spec file
+my @fr_course_list=();
+my $fr_all;
+if($FR =~ /^(0|false)$/)
+{
+	$fr_all = 0;
+}
+elsif($FR =~ /^(1|true)$/)
+{
+	$fr_all = 1;
+}
+elsif(length($FR))
+{
+	$fr_all = 0;
+	open FILE, "<", $FR or die $!;
+	while (<FILE>)
+	{
+		chomp;
+		while($_ =~ /(\d{6})/g)
+		{
+			push @fr_course_list,$1;
+		}
+	}
+	close FILE;
+}
+else
+{
+	$fr_all = 0;
+}
 
 #Parse the noreplacement course spec file
 my @nr_course_list=();
@@ -141,11 +171,20 @@ sub round_gpa
 	return "N/A";
 }
 
+sub max
+{
+	return ($_[0] > $_[1]) ? $_[0] : $_[1];
+}
+
+sub min
+{
+	return ($_[0] < $_[1]) ? $_[0] : $_[1];
+}
+
 #main row loop
 while (<>)
 {
-
-	#Determine what type of relevent data is encoded
+	#Determine what type of relevent data is encoded by this line
 	given($_)
 	{
 		#New student entry -- reset
@@ -182,13 +221,14 @@ while (<>)
 			$course_date = $6; #MM/DD/YY date format
 			$course_school_string = $7; 
 			$course_semester = $semester_map{substr($course_date,0,2)};
+			$course_score_letter = substr($course_score,0,1);
 
 			#Determine numeric score
 			if($course_name =~ /^AP .*/){ 
-				$course_score_num = $grade_mapping_ap{substr($course_score,0,1)};
+				$course_score_num = $grade_mapping_ap{$course_score_letter};
 			}
 			else{
-				$course_score_num = $grade_mapping_std{substr($course_score,0,1)};
+				$course_score_num = $grade_mapping_std{$course_score_letter};
 			}
 
 			#Deal w/ invalid (ie. not A,B,C,D,F) scores
@@ -197,43 +237,17 @@ while (<>)
 				$course_weight = 0.0;
 			}
 
-			my $rec = {name => $course_name, weight => $course_weight, score => $course_score_num, grade => $course_grade, nominal_grade => 0, date => $course_date, semester => $course_semester};
+			my $rec = {num => $course_num, name => $course_name, weight => $course_weight, score_letter => $course_score_letter, score => $course_score_num, grade => $course_grade, nominal_grade => 0, date => $course_date, semester => $course_semester};
 
-			#Add to courses_taken hash -> new entry
-			if(not exists($courses_taken{$course_num}))
-			{
-				$courses_taken{$course_num} = ();
-				push @{$courses_taken{$course_num}},$rec;
-				$course_ref = \($courses_taken{$course_num}[-1]); 
-			}
-			else
-			{ 
-				#Same course already exists -> keep more recent date (top of file), but update to older grade (bottom of file, parsed later)
-				#Only allowed if noReplacement is false and previously taken course was a C/D/F, otherwise don't replace, but just add an additonal instance
-				if($nr_all or (not substr($course_score,0,1) =~ /[D|F|C]/) or ($course_num ~~ @nr_course_list) )
-				{
-					push @{$courses_taken{$course_num}},$rec;
-					$course_ref = \($courses_taken{$course_num}[-1]); 
-				}
-				else
-				{
-					#Update grade_year and date...need both to determine semester
-					$courses_taken{$course_num}[-1]{date}=$course_date;
-					$courses_taken{$course_num}[-1]{grade}=$course_grade;
-					$courses_taken{$course_num}[-1]{semester}=$course_semester;
-					$course_ref = undef;
-				}
-			}
-
-			#Add reference to course to semester grouping hash
+			#Add course to semester grouping hash
 			if(not exists($semester_groups{$course_date}))
 			{
 				$semester_groups{$course_date} = ();
 			}
-			push @{$semester_groups{$course_date}},$course_ref;
+			push @{$semester_groups{$course_date}},$rec
 		}
 
-		#Finalize student
+		#Finalize student: apply replacements and compute GPAs
 		when(/^Date Printed: (\d\d\/\d\d\/\d\d)/)
 		{
 
@@ -249,30 +263,6 @@ while (<>)
 				$ov_weight_sum{$_}=0.0;
 			}
 
-			#Update summer semesters (for nonreplaced courses ONLY), if required
-# 			if($NS)
-# 			{
-# 				while( ($course_date, $course_array) = each %semester_groups)
-# 				{
-# 					my $num_courses = scalar(@{$course_array});
-# 					my $course_month = substr($course_date,0,2);
-# 					if($num_courses <= $max_summer_courses and $course_month >= $summer_interval[0] and $course_month <= $summer_interval[1]) #Summer conditions
-# 					{
-# 						foreach $course_ref (@{$course_array})
-# 						{
-# 							if(defined $course_ref)
-# 							{
-# 								$course_struct = $$course_ref;
-# 								if($course_date =~ $course_struct->{date}) #nonreplaced
-# 								{
-# 									$course_struct->{semester} = 'R';
-# 								}
-# 							}
-# 						}
-# 					}
-# 				}
-# 
-# 			}
 
 			#Sort semesters MM/DD/YY
 			my @sorted_semesters = reverse map {$_->[0]} 
@@ -293,134 +283,184 @@ while (<>)
 				my $course_month = substr($course_date,0,2);
 				my $is_full_semester = ($num_courses > $max_summer_courses) ? 1 : 0;
 			        my $is_summer = (not $is_full_semester and $course_month >= $summer_interval[0] and $course_month <= $summer_interval[1]) ? 1 : 0;
-				my $semester_grade='N/A';
+				my $semester_grade=$course_array->[0]->{grade};
 				my $semester_period = ($is_summer) ? "R" : $semester_map{$course_month};
 
-				#Iterate through all courses to determine semester and apply summer correction
-				foreach $course_ref (@{$course_array})
+				#Apply summer semester correction
+				foreach $course_struct (@{$course_array})
 				{
-					if(defined $course_ref)
+					if($is_summer)
 					{
-						$course_struct = $$course_ref;
-						if($course_date =~ $course_struct->{date}) #nonreplaced
-						{
-							#Only if not including summer semesters in the next fall
-							if($is_summer and $NS)
-							{
-								$course_struct->{semester} = 'R';
-							}
-							$semester_grade = $course_struct->{grade};
-						}
+						$course_struct->{semester} = 'R';
 					}
 				}
 				
-				#Determine nominal grade
+				#***Determine nominal grade
 				$nominal_grade = $semester_grade;
-				if($is_full_semester and $semester_grade =~ '09') #TODO: fix this to make more general case
-				{
+				my $sem_key = "$semester_period"."$semester_grade";
+				my $prev_grade = sprintf("%.2d",$semester_grade-1);
+				my $prev_offset;
 
-					my $sem_key = "$semester_period"."$semester_grade";
+				#Get prev semester accumlator value -> starting point for new offset
+				if(not exists $nominal_grade_accum{"F"."$prev_grade"} and not exists $nominal_grade_accum{"S"."$prev_grade"})
+				{
+					$prev_offset = 0;
+				}
+				if(not exists $nominal_grade_accum{"F"."$prev_grade"} and exists $nominal_grade_accum{"S"."$prev_grade"})
+				{
+					$prev_offset =  $nominal_grade_accum{"S"."$prev_grade"};
+				}
+				elsif(exists $nominal_grade_accum{"F"."$prev_grade"} and not exists $nominal_grade_accum{"S"."$prev_grade"})
+				{
+					$prev_offset = $nominal_grade_accum{"F"."$prev_grade"};
+				}
+				elsif(exists $nominal_grade_accum{"F"."$prev_grade"} and exists $nominal_grade_accum{"S"."$prev_grade"})
+				{
+					$prev_offset = max($nominal_grade_accum{"F"."$prev_grade"}, $nominal_grade_accum{"S"."$prev_grade"});
+				}
+
+				#Add to accumulator
+				if($is_full_semester)
+				{
 					if(not exists($nominal_grade_accum{$sem_key}))
 					{
-
-						$nominal_grade_accum{$sem_key}=0;
+						$nominal_grade_accum{$sem_key} = $prev_offset;
 					}
 					else
 					{
 						$nominal_grade_accum{$sem_key} = $nominal_grade_accum{$sem_key} + 1;
 					}
-					$nominal_grade += $nominal_grade_accum{$sem_key};
-				}	
 
-				#Iterate through coursees to apply nominal grade
-				foreach $course_ref (@{$course_array})
+					$nominal_grade += $nominal_grade_accum{$sem_key};
+				}
+				elsif($is_summer)
 				{
-					if(defined $course_ref)
+					$nominal_grade += $prev_offset;	
+				}
+
+				#****Perform grade replacement
+				foreach $course_struct (@{$course_array})
+				{
+					#Apply the nominal grade
+					$course_struct->{nominal_grade} = sprintf("%.2d",$nominal_grade); 
+					
+					$course_ref = \$course_struct;
+					my $course_ref_old;
+					my $course_struct_old;
+					if(not exists($courses_taken{$course_struct->{num}}))
 					{
-						$course_struct = $$course_ref;
-						if($course_date =~ $course_struct->{date}) #nonreplaced
+						$courses_taken{$course_struct->{num}} = ();
+						push @{$courses_taken{$course_struct->{num}}},$course_ref;
+					}
+					else
+					{
+						#Same course already exists -> keep more recent date (new entry), but replace when taken
+						$course_ref_old = $courses_taken{$course_struct->{num}}[-1];
+						$course_struct_old = $$course_ref_old;
+
+						#Only allowed if noReplacement is false and previously taken course was a C/D/F, otherwise don't replace, but just add an additonal instance
+						if($nr_all or ($course_struct_old->{score_letter} !~ /[D|F|C]/) or ($course_struct->{num} ~~ @nr_course_list) )
 						{
-							$course_struct->{nominal_grade} = sprintf("%.2d",$nominal_grade); #TODO: need to apply this to replaced semesters also
+							#Add extra instance
+							push @{$courses_taken{$course_struct->{num}}},$course_ref;
+						}
+						else
+						{
+							#Update score
+							$course_struct_old->{score} = $course_struct->{score};
+						      	$course_struct_old->{score_letter} = $course_struct->{score_letter};	
 						}
 					}
 				}
 
-
 				print "$semester_period $semester_grade  $nominal_grade $is_full_semester :: ";
 
 				print "$course_date $course_array\n";
-				foreach $course_ref (@{$course_array})
+				foreach $course_struct (@{$course_array})
 				{
-					if(defined $course_ref)
-					{
-						$course_struct = $$course_ref;
-						print ">>> $course_struct->{name} $course_struct->{grade} $course_struct->{nominal_grade} $course_struct->{date} $course_struct->{semester}\n";
-					}
+					print ">>> $course_struct->{name} $course_struct->{grade} $course_struct->{nominal_grade} $course_struct->{date} $course_struct->{semester} $course_struct->{score_letter}\n";
 				}
 			}
 
-
-		#Compute weighted GPA...
-	
-		#print "****$id_num $name_string $birth_date_string $gender $grade_current $gpa";
-		#Iterate over all course numbers
-		while( ($course_num, $course_array) = each %courses_taken)
-		{
-
-			#Determine if is an ACADEMIC course
-			my $is_academic_course = ($course_num ~~ @ac_course_list)? 1 : 0;
-
-
-			#Iterate over all courses w/ same course number, ie. were not retakes
-			foreach $course_struct (@{$course_array})
+			#***Compute weighted GPA...
+			#Iterate over all course numbers
+			while( ($course_num, $course_array) = each %courses_taken)
 			{
-				my $effective_weight = ($W or ($course_struct->{weight} == 0.0)) ? $course_struct->{weight} : 1.0; #Use contant weight? (Zero weight overides this)
-				my $effective_grade = (not $NG or $course_struct->{nominal_grade} == '0') ?  $course_struct->{grade} : $course_struct->{nominal_grade};
-				print ">EG=$effective_grade $course_struct->{grade} $course_struct->{nominal_grade} \n";
+				
+				#Determine if is an ACADEMIC course
+				my $is_academic_course = ($course_num ~~ @ac_course_list)? 1 : 0;
 
-				#Iterate over all time intervals 
-				foreach  $current_interval (@interval_list)
-				{
-					#Cumulative overall/academic
-					if($current_interval =~ m/^C((\d\d)*)([A|O]?)$/)
+
+				#Iterate over all courses w/ same course number, ie. were not retakes
+				foreach $course_ref (@{$course_array})
+				{	
+					$course_struct = $$course_ref;
+
+					my $effective_weight = ($W or ($course_struct->{weight} == 0.0)) ? $course_struct->{weight} : 1.0; #Use contant weight? (Zero weight overides this)
+					my $effective_grade = (not $NG or $course_struct->{nominal_grade} == '0') ?  $course_struct->{grade} : $course_struct->{nominal_grade};
+					#print ">EG=$effective_grade $course_struct->{grade} $course_struct->{nominal_grade} \n";
+
+					#Iterate over all time intervals 
+					foreach  $current_interval (@interval_list)
 					{
-						my $academic_interval = $3;
-						my @valid_years = ( $1 =~ m/../g );
-
-						#Match valid_years or is entire available history?
-						if((not scalar(@valid_years)) or ($effective_grade  ~~ @valid_years))
+						#Cumulative overall/academic
+						if($current_interval =~ m/^C((\d\d)*)([A|O]?)$/)
 						{
-							#Academic or overall?	
-							if((length($academic_interval) == 0) or ($academic_interval =~"O") or ($is_academic_course and ($course_struct->{weight} >= $M) and ($academic_interval =~ "A")))
-							{
-								$ov_gpa{$current_interval} += ($effective_weight * $course_struct->{score});
-								$ov_weight_sum{$current_interval} += $effective_weight;
-							}
-						}	
-					}
-					#Parse interval format and extract semester/year
-					elsif($current_interval =~ m/^([F|S|R]?)(\d\d)([A|O]?)$/)
-					{
-						my $current_sem = $1;
-						my $current_year = $2;
-						my $academic_interval = $3;
+							my $academic_interval = $3;
+							my @valid_years = ( $1 =~ m/../g );
 
-
-							#Match grade_year?
-							if($effective_grade =~ $current_year)
+							#Match valid_years or is entire available history?
+							if((not scalar(@valid_years)) or ($effective_grade  ~~ @valid_years))
 							{
-								#Semesters match, or full academic year
-								if( ((not length($current_sem)) and $course_struct->{semester} !~ 'R') || (length($current_sem) and  ($course_struct->{semester} =~ $current_sem)))
+								#Academic or overall?	
+								if((length($academic_interval) == 0) or ($academic_interval =~"O") or ($is_academic_course and ($course_struct->{weight} >= $M) and ($academic_interval =~ "A")))
 								{
-									#Academic or overall?	
-									if((length($academic_interval) == 0) or ($academic_interval =~"O") or ($is_academic_course and ($course_struct->{weight} >= $M) and ($academic_interval =~ "A")))
-									{
-										$ov_gpa{$current_interval} += ($effective_weight * $course_struct->{score});
-										$ov_weight_sum{$current_interval} += $effective_weight;
+									$ov_gpa{$current_interval} += ($effective_weight * $course_struct->{score});
+									$ov_weight_sum{$current_interval} += $effective_weight;
+								}
+							}	
+						}
+						#Parse interval format and extract semester/year
+						elsif($current_interval =~ m/^([F|S|R]?)(\d\d)([A|O]?)$/)
+						{
+							my $current_sem = $1;
+							my $current_year = $2;
+							my $academic_interval = $3;
 
+								#Match grade_year?
+								if($effective_grade =~ $current_year)
+								{
+									if($NS) #No summmers
+									{
+										#Full academic year (don't include summers), or semesters match (can explicitly specify summer)
+										if( ((not length($current_sem)) and $course_struct->{semester} !~ 'R') || 
+										    (length($current_sem) and  ($course_struct->{semester} =~ $current_sem)) )
+										{
+
+											#Academic or overall?	
+											if((length($academic_interval) == 0) or ($academic_interval =~"O") or 
+											   ($is_academic_course and ($course_struct->{weight} >= $M) and ($academic_interval =~ "A")) )
+											{
+												$ov_gpa{$current_interval} += ($effective_weight * $course_struct->{score});
+												$ov_weight_sum{$current_interval} += $effective_weight;
+											}
+										}
+									}
+									else #Including summers
+									{
+										#Full academic year, or semesters match
+										if( (not length($current_sem)) || ( length($current_sem) and ($course_struct->{semester} =~ $current_sem)) )
+										{
+											#Academic or overall?	
+											if((length($academic_interval) == 0) or ($academic_interval =~"O") or 
+											   ($is_academic_course and ($course_struct->{weight} >= $M) and ($academic_interval =~ "A")) )
+											{
+												$ov_gpa{$current_interval} += ($effective_weight * $course_struct->{score});
+												$ov_weight_sum{$current_interval} += $effective_weight;
+											}
+										}
 									}
 								}
-							}
 						}
 						else
 						{
@@ -431,7 +471,7 @@ while (<>)
 				}
 			}
 
-			#Iterate over all intervals
+			#Iterate over all intervals and divide by weight
 			foreach  $current_interval (@interval_list)
 			{
 				$ov_gpa{$current_interval} = ($ov_weight_sum{$current_interval} > 0.0) ? $ov_gpa{$current_interval}/$ov_weight_sum{$current_interval} : "N/A";
@@ -447,9 +487,12 @@ while (<>)
 			#Print out the GPAs
 			print map { "$ov_gpa_round{$_}|" } @interval_list;
 			print "\n";
-		}
-	}	
-} 
+
+		}#END when 
+	}#END given	
+}#END main 
+
+#Close main file
 continue 
 {
 	close ARGV if eof;
