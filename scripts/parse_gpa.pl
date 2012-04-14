@@ -1,24 +1,28 @@
 #!/usr/bin/perl -ws
 
 #parse_gpa.pl
-#Copyright: Nick Vandal 2009
 #Calculates GPAs from a transcripts
+#
+#Author Information:
+#		Nicholas Vandal
+#           	vandalusna@gmail.com
+#	    	nicholas.vandal@gmail.com
+#	    	nickvandal.com
 
 use strict;
 use feature 'switch';
 use POSIX;
 
 #Command line switches
-our($W, $T, $A, $M, $NR, $NS, $FR, $NG, $h); #Weighted, interval_string, academic_course_file, minWeight, noReplacement
-if(not defined $W) {$W = 0;}
-if(not defined $T) {$T = 'C';}
-if(not defined $A) {$A = '';}
-if(not defined $M) {$M = 0;}
-if(not defined $NR) {$NR = '';}
-if(not defined $NS) {$NS = 0;}
-if(not defined $NG) {$NG = 0;}
-
-#print "NG=$NG\n\n";
+our($W, $T, $A, $M, $NR, $NS, $FR, $NG, $h);
+if(not defined $W) {$W = 0;}	#Weighted GPAs
+if(not defined $T) {$T = 'C';}	#Interval string
+if(not defined $A) {$A = '';}	#Academic course file
+if(not defined $M) {$M = 0;}	#Minimum course weight
+if(not defined $NR) {$NR = '';}	#Never replace
+if(not defined $NS) {$NS = 0;}	#No summers
+if(not defined $NG) {$NG = 0;}	#Nomimal grade level
+if(not defined $FR) {$FR = '';}	#Failing only replacement
 
 if ( @ARGV <= 0 or $h)
 {
@@ -358,28 +362,61 @@ while (<>)
 						$course_ref_old = $courses_taken{$course_struct->{num}}[-1];
 						$course_struct_old = $$course_ref_old;
 
-						#Only allowed if noReplacement is false and previously taken course was a C/D/F, otherwise don't replace, but just add an additonal instance
-						if($nr_all or ($course_struct_old->{score_letter} !~ /[D|F|C]/) or ($course_struct->{num} ~~ @nr_course_list) )
+						my $is_replacement;
+						if($nr_all)
 						{
-							#Add extra instance
-							push @{$courses_taken{$course_struct->{num}}},$course_ref;
+							$is_replacement = 0;
+						}
+						elsif($fr_all)
+						{
+							#Failing replacements only
+							$is_replacement = ($course_struct_old->{score_letter} =~ 'F');
 						}
 						else
 						{
+							if($course_struct->{num} ~~ @nr_course_list)
+							{
+								$is_replacement = 0;
+							}
+							else
+							{
+								if($course_struct->{num} ~~ @fr_course_list)
+								{
+									#Failing replacements only
+									$is_replacement = ($course_struct_old->{score_letter} =~ 'F');
+								}
+								else
+								{
+									#C/D/F replacements
+									$is_replacement = ($course_struct_old->{score_letter} =~ /[F|D|C]/);
+								}
+							}
+						}
+
+						if($is_replacement)
+
+						{
+							#	print "***UPDATING***: <$course_struct->{num}> $course_struct_old->{name}/$course_struct_old->{date}/$course_struct_old->{score_letter} ==> $course_struct->{name}/$course_struct->{date}/$course_struct->{score_letter}\n";
+
 							#Update score
 							$course_struct_old->{score} = $course_struct->{score};
 						      	$course_struct_old->{score_letter} = $course_struct->{score_letter};	
+							$course_struct_old->{weight} = $course_struct->{weight};
+						}
+						else
+						{
+							push @{$courses_taken{$course_struct->{num}}},$course_ref;
 						}
 					}
 				}
 
-				print "$semester_period $semester_grade  $nominal_grade $is_full_semester :: ";
+				#print "$semester_period $semester_grade  $nominal_grade $is_full_semester :: ";
 
-				print "$course_date $course_array\n";
-				foreach $course_struct (@{$course_array})
-				{
-					print ">>> $course_struct->{name} $course_struct->{grade} $course_struct->{nominal_grade} $course_struct->{date} $course_struct->{semester} $course_struct->{score_letter}\n";
-				}
+				#print "$course_date $course_array\n";
+				#foreach $course_struct (@{$course_array})
+				#{
+				#	print ">>> $course_struct->{name} $course_struct->{grade} $course_struct->{nominal_grade} $course_struct->{date} $course_struct->{semester} $course_struct->{score_letter}\n";
+				#}
 			}
 
 			#***Compute weighted GPA...
