@@ -1,20 +1,40 @@
 #!/usr/bin/perl -ws
 
-#parse_gpa.pl
-#Calculates GPAs from a transcripts
+# parse_gpa.pl
+# Calculates GPAs from a transcripts
 #
-#Author Information:
-#		Nicholas Vandal
-#           	vandalusna@gmail.com
-#	    	nicholas.vandal@gmail.com
-#	    	nickvandal.com
+# Copyright (c) 2012, Nicholas A Vandal (nicholas.vandal@gmail.com)
+#
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met: 
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer. 
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution. 
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# v1.0
 
 use strict;
 use feature 'switch';
 use POSIX;
 
 #Command line switches
-our($W, $T, $A, $M, $NR, $NS, $FR, $NG, $h);
+our($W, $T, $A, $M, $NR, $NS, $FR, $NG, $BS, $KD, $h);
 if(not defined $W) {$W = 0;}	#Weighted GPAs
 if(not defined $T) {$T = 'C';}	#Interval string
 if(not defined $A) {$A = '';}	#Academic course file
@@ -23,6 +43,8 @@ if(not defined $NR) {$NR = '';}	#Never replace
 if(not defined $NS) {$NS = 0;}	#No summers
 if(not defined $NG) {$NG = 0;}	#Nomimal grade level
 if(not defined $FR) {$FR = '';}	#Failing only replacement
+if(not defined $BS) {$BS = 0;}	#Best score replacement
+if(not defined $KD) {$KD = 0;}	#Keep duplicates
 
 if ( @ARGV <= 0 or $h)
 {
@@ -45,6 +67,8 @@ if ( @ARGV <= 0 or $h)
 	print "   -NR=[file]\t\tSpecify file containing courses which NEVER replace the grades of those previously taken. If no file specified, no replacements are made (disabled by default)\n";
 	print "   -NS\t\t\tDo not include courses taken over the summer in the fall semester. No effect on replacement courses taken over the summer (disabled by default)\n";
 	print "   -NG\t\t\tUse student's nominal grade level (ie. they advance to the next grade level every year regardless of course failures)\n";
+	print "   -BS\t\t\tKeep best score (instead of most recent) when performing grade replacement (disabled by default)\n";
+	print "   -KD\t\t\tKeep duplicate courses within the same semester i.e., don't perform grade replacement (disabled by default)\n"; 
 	print "\n";
 	print "\n";
 	print "Examples:\n";
@@ -358,54 +382,131 @@ while (<>)
 					}
 					else
 					{
-						#Same course already exists -> keep more recent date (new entry), but replace when taken
-						$course_ref_old = $courses_taken{$course_struct->{num}}[-1];
-						$course_struct_old = $$course_ref_old;
-
+						#Same course already exists -> keep more recent date (new entry), but replace when taken	
 						my $is_replacement;
-						if($nr_all)
+						my $is_same_semester;
+						my $is_old_bad_score;
+						my $is_failing_score;
+						my $is_new_better_score;
+						my $bs_drop;
+
+						#Iterate over all previous instances of course and attempt replacement starting with the newest first
+						foreach $course_ref_old (reverse @{$courses_taken{$course_struct->{num}}})
 						{
-							$is_replacement = 0;
-						}
-						elsif($fr_all)
-						{
-							#Failing replacements only
-							$is_replacement = ($course_struct_old->{score_letter} =~ 'F');
-						}
-						else
-						{
-							if($course_struct->{num} ~~ @nr_course_list)
+							#$course_ref_old = $courses_taken{$course_struct->{num}}[-1];
+							$course_struct_old = $$course_ref_old;
+							
+							#Determine if should replace or not
+							$is_same_semester = ($course_struct_old->{date} =~ $course_struct->{date}) ? 1 : 0;	
+							$is_old_bad_score = ($course_struct_old->{score_letter} =~ /[F|D|C]/) ? 1 : 0;
+							$is_failing_score = ($course_struct_old->{score_letter} =~ 'F') ? 1 : 0;
+							$is_new_better_score = ($course_struct->{score} > $course_struct_old->{score}) ? 1 : 0;
+							$bs_drop = 0;
+
+							#No replacement overides everything
+							if($nr_all)
 							{
 								$is_replacement = 0;
 							}
-							else
+							elsif($fr_all)
 							{
-								if($course_struct->{num} ~~ @fr_course_list)
+								#Don't replace within same semester
+								if($KD)
 								{
 									#Failing replacements only
-									$is_replacement = ($course_struct_old->{score_letter} =~ 'F');
+									$is_replacement = $is_failing_score && !$is_same_semester;
 								}
 								else
 								{
-									#C/D/F replacements
-									$is_replacement = ($course_struct_old->{score_letter} =~ /[F|D|C]/);
+									#Failing replacements only
+									$is_replacement = $is_failing_score;
 								}
 							}
+							else
+							{
+								if($course_struct->{num} ~~ @nr_course_list)
+								{
+									$is_replacement = 0;
+								}
+								else
+								{
+									if($course_struct->{num} ~~ @fr_course_list)
+									{
+										#Don't replace within same semester
+										if($KD)
+										{
+											#Failing replacements only
+											$is_replacement = $is_failing_score && (!$is_same_semester);
+										}
+										else
+										{
+											#Failing replacements only
+											$is_replacement = $is_failing_score;
+										}
+									}
+									else
+									{
+										#C/D/F replacements
+										if($BS)
+										{
+											#Don't replace within same semester
+											if($KD)
+											{
+												#Better score
+												 $is_replacement = $is_old_bad_score && $is_new_better_score && (!$is_same_semester);
+												 $bs_drop = $is_old_bad_score && !$is_new_better_score && (!$is_same_semester);
+											}
+											else
+											{
+												#Better score
+												$is_replacement = $is_old_bad_score  && $is_new_better_score;
+											        $bs_drop = $is_old_bad_score  && !$is_new_better_score;
+											}
+
+										}
+										else
+										{
+											#Don't replace within same semester
+											if($KD)
+											{
+												#More recent
+												$is_replacement = $is_old_bad_score && (!$is_same_semester); 
+											}
+											else
+											{
+												#More recent
+												$is_replacement = $is_old_bad_score;
+											}
+										}
+									}
+								}
+							}
+
+							if($is_replacement)
+
+							{
+								#	print "***UPDATING***: <$course_struct->{num}> $course_struct_old->{name}/$course_struct_old->{date}/$course_struct_old->{score_letter} ==> $course_struct->{name}/$course_struct->{date}/$course_struct->{score_letter}\n";
+
+								#Update score
+								$course_struct_old->{score} = $course_struct->{score};
+								$course_struct_old->{score_letter} = $course_struct->{score_letter};	
+								$course_struct_old->{weight} = $course_struct->{weight};
+								last;
+							}
 						}
-
-						if($is_replacement)
-
+						if(!$is_replacement)
 						{
-							#	print "***UPDATING***: <$course_struct->{num}> $course_struct_old->{name}/$course_struct_old->{date}/$course_struct_old->{score_letter} ==> $course_struct->{name}/$course_struct->{date}/$course_struct->{score_letter}\n";
+							if($bs_drop)
+							{
+								#No replacement occured due to not being a better score -> DROP
+								#print "***DROPPING***: <$course_struct->{num}> $course_struct->{name}/$course_struct->{date}/$course_struct->{score_letter}\n";
 
-							#Update score
-							$course_struct_old->{score} = $course_struct->{score};
-						      	$course_struct_old->{score_letter} = $course_struct->{score_letter};	
-							$course_struct_old->{weight} = $course_struct->{weight};
-						}
-						else
-						{
-							push @{$courses_taken{$course_struct->{num}}},$course_ref;
+							}
+							else
+							{
+								#No replacement occured -> PUSH as new course
+								push @{$courses_taken{$course_struct->{num}}},$course_ref;
+							}
 						}
 					}
 				}
