@@ -34,7 +34,7 @@ use feature 'switch';
 use POSIX;
 
 #Command line switches
-our($W, $T, $A, $M, $NR, $NS, $FR, $NG, $BS, $KD, $h);
+our($W, $T, $A, $M, $NR, $NS, $FR, $NG, $BS, $KD, $h, $PH);
 if(not defined $W) {$W = 0;}	#Weighted GPAs
 if(not defined $T) {$T = 'C';}	#Interval string
 if(not defined $A) {$A = '';}	#Academic course file
@@ -45,6 +45,7 @@ if(not defined $NG) {$NG = 0;}	#Nomimal grade level
 if(not defined $FR) {$FR = '';}	#Failing only replacement
 if(not defined $BS) {$BS = 0;}	#Best score replacement
 if(not defined $KD) {$KD = 0;}	#Keep duplicates
+if(not defined $PH) {$PH = 0;}	#Print header
 
 if ( @ARGV <= 0 or $h)
 {
@@ -69,6 +70,7 @@ if ( @ARGV <= 0 or $h)
 	print "   -NG\t\t\tUse student's nominal grade level (ie. they advance to the next grade level every year regardless of course failures)\n";
 	print "   -BS\t\t\tKeep best score (instead of most recent) when performing grade replacement (disabled by default)\n";
 	print "   -KD\t\t\tKeep duplicate courses within the same semester i.e., don't perform grade replacement (disabled by default)\n"; 
+	print "   -PH\t\t\tPrint column headers in output (disabled by default)\n";
 	print "\n";
 	print "\n";
 	print "Examples:\n";
@@ -112,7 +114,9 @@ my @summer_interval = ('05','09'); #[may sep] inclusive
 my $max_summer_courses = 3;
 
 #Parse the interval list
-my @interval_list = split(/[^A|^F|^R|^S|^C|^\d]/,$T);
+#my @interval_list = split(/[^A|^F|^R|^S|^C|^\d]/,$T);
+my @interval_list = split(/[\|\\\/]/,$T);
+#my @interval_list = split(/^[AFRSC\d]/,$T);
 
 #Parse the academic course spec file
 my @ac_course_list=();
@@ -207,6 +211,14 @@ sub max
 sub min
 {
 	return ($_[0] < $_[1]) ? $_[0] : $_[1];
+}
+
+#Print the column headers
+if($PH)
+{
+	print "IDNUM|NAME|DOB|";
+	print map { "$_|" } @interval_list;
+	print "\n";
 }
 
 #main row loop
@@ -602,7 +614,7 @@ while (<>)
 						}
 						else
 						{
-							print "ERROR: Invalid interval specifier string! Exiting...\n";
+							print "ERROR: Invalid interval specifier string: \"$current_interval\". Exiting...\n";
 							exit 1;
 						}
 					}
