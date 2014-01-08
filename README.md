@@ -1,6 +1,16 @@
-
+This is a set of scripts written for the bulk computation of GPAs from Los Angeles Unified School District transcripts. The scripts are completely specific to the transcript format, but are designed to be flexible with the exact methodology used to compute a student's GPA. This replaced an extremely manual process in a psychology research lab and was my first perl program of any length. I’m not actively developing this, but others may find it useful.
 #Install
 #Usage
+##extract_class_list.pl
+Perl script to parse raw transcript file and compute generate list of unique
+course numbers and their associated course names
+
+```
+usage: extract_class_list file
+
+Examples:
+   ./extract_class_list.pl input/raw.txt > input/classes_all_aliases.txt
+```
 ##parse_gpa.pl
 Perl script to parse raw transcript file and compute GPAs
 ```
@@ -21,40 +31,32 @@ Arguments:
 ```
 ###Examples:
 
-Calculate the cumulative overall GPAs for all students for their entire academic history in raw.txt and output the result to the screen.
+Calculate the cumulative overall GPAs for all students for their entire academic history in sample_raw.txt and output the result to the screen with column headers.
 ```
-./parse_gpa.pl raw.txt
+$ ./scripts/parse_gpa.pl input/sample_raw.txt -PH
+IDNUM|NAME|DOB|C|
+123454M612|WASHINGTON, GEORGE|04/30/98|1.86|
+543221M062|ADAMS, JOHN QUINCY|03/04/24|3.11|
 ```
 Calculate the cumulative overall GPAs for all students for their entire academic history in raw.txt, weigh each class by its number of credit hours (3rd column of raw.txt) and output the result to the file out.txt.
 ```
-./scripts/parse_gpa.pl input/raw.txt -W > output/out.txt
+$ ./scripts/parse_gpa.pl input/raw.txt -W > output/out.txt
 ```
 Calculate the overall GPAs and academic GPAs (determined using the courses in academic courses in selected.txt), in 9th grade and output the result to out.txt.
 ```
- ./scripts/parse_gpa.pl -A='selected.txt' -T='09/09A' input/raw.txt > output/out.txt
+$  ./scripts/parse_gpa.pl -A='selected.txt' -T='09/09A' input/raw.txt > output/out.txt
 ```
 Calculate the overall and academic GPAs for 9th grade, the 10th grade fall semester overall GPAs, the 10th grade spring academic GPAs, the cumulative 9th-10th grade GPAs, the cumulative 8-10th grade academic GPAs, the overall and academic cumulative GPAs for the entire entire history of raw.txt. Output the result to out.txt.
 ```
-./scripts/parse_gpa.pl -A='input/selected.txt' -T='09/09A/F10/S10A/C0910/C080910A/C/CA' input/raw.txt > output/out.txt
+$ ./scripts/parse_gpa.pl -A='input/selected.txt' -T='09/09A/F10/S10A/C0910/C080910A/C/CA' input/raw.txt > output/out.txt
 ```
 Calculate overall GPAs for fall and spring of 7th through 10th grades, excluding summers, without any grade replacement, a min course weight of 5.0, nominal grade advancement (student never held back), keeping the best scores on retakes, and enforcing policy that retakes must occur in a later semester. Output result to out.txt.
 ```
-./scripts/parse_gpa.pl -T='F07/S07/F08/S08/F09/S09/F10/S10' -NS -NR -M=5.0 -NG -BS -KD input/raw.txt > output/out.txt 
+$ ./scripts/parse_gpa.pl -T='F07/S07/F08/S08/F09/S09/F10/S10' -NS -NR -M=5.0 -NG -BS -KD input/raw.txt > output/out.txt 
 ```
 Additional examples
 ```
-./scripts/parse_gpa.pl -T='F07/S07/F08/S08/F09/S09/F10/S10' -NR=input/noreplace.txt -FR=input/failonly.txt -M=5.0 -NG -BS -KD input/raw.txt > output/out.txt
-./scripts/parse_gpa.pl -A=input/selected.txt -NR=input/noreplace.txt -T='F07A/S07A/F07/S07/F08A/S08A/F08/S08/F09A/S09A/F09/S09/F10A/S10A/F10/S10/' -M=5.0 input/raw.txt > output/out.txt
-./scripts/parse_gpa.pl -A=input/selected.txt -NR=input/noreplace.txt -FR=input/failonly.txt -T='F09/S09/F10/S10' -M=5.0 -NS -NG input/raw.txt > output/out.txt
+$ ./scripts/parse_gpa.pl -T='F07/S07/F08/S08/F09/S09/F10/S10' -NR=input/noreplace.txt -FR=input/failonly.txt -M=5.0 -NG -BS -KD input/raw.txt > output/out.txt
+$ ./scripts/parse_gpa.pl -A=input/selected.txt -NR=input/noreplace.txt -T='F07A/S07A/F07/S07/F08A/S08A/F08/S08/F09A/S09A/F09/S09/F10A/S10A/F10/S10/' -M=5.0 input/raw.txt > output/out.txt
+$ ./scripts/parse_gpa.pl -A=input/selected.txt -NR=input/noreplace.txt -FR=input/failonly.txt -T='F09/S09/F10/S10' -M=5.0 -NS -NG input/raw.txt > output/out.txt
 ```
-###extract_class_list.pl
-Perl script to parse raw transcript file and compute generate list of unique
-course numbers and their associated course names
-
-```
-usage: extract_class_list file
-
-Examples:
-   ./extract_class_list.pl input/raw.txt > input/classes_all_aliases.txt
-```
-
