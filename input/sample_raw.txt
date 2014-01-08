@@ -1,0 +1,161 @@
+ 5 
+
+
+TR10        Courses Completed - Verified 11/26/08                  ID 123454M612
+
+Name: WASHINGTON, GEORGE Birth: 04/30/98  Sex: M  Room:  204   RecNr: 1776
+School: 8557     Grade: 10     Track: A         Spc Attnd Cat:       %Aprn: 100%
+E-Code: E1    E-School: 8557   E-Dte:  9/13/10  Status: Active
+
+310302 ALGEBRA 1B      5.0  AEE  Gr10  06/29/10  8557 Birmingham Hi
+370127 WHG: MOD WLD A  5.0  BEE  Gr10  06/29/10  8557 Birmingham Hi
+
+230110 ENGLISH 10B     5.0  DUS  Gr09  05/28/10  8557 Birmingham Hi
+256014 SPANISH 2B      5.0  FUS  Gr09  05/28/10  8557 Birmingham Hi
+310402 GEOMETRY B      5.0  CSS  Gr09  05/28/10  8557 Birmingham Hi
+330629 TRACK FIELD     5.0  FUU  Gr09  05/28/10  8557 Birmingham Hi
+361402 CHEMISTRY B     5.0  DUU  Gr09  05/28/10  8557 Birmingham Hi
+370128 H WHG:MOD WL B  5.0  FUS  Gr09  05/28/10  8557 Birmingham Hi
+
+230109 ENGLISH 10A     5.0  CSE  Gr09  12/18/09  8557 Birmingham Hi
+256013 SPANISH 2A      5.0  DSS  Gr09  12/18/09  8557 Birmingham Hi
+310401 GEOMETRY A      5.0  AEE  Gr09  12/18/09  8557 Birmingham Hi
+330705 BASKETBALL      5.0  AEE  Gr09  12/18/09  8557 Birmingham Hi
+361401 CHEMISTRY A     5.0  FUS  Gr09  12/18/09  8557 Birmingham Hi
+370127 H WHG:MOD WL A  5.0  FUS  Gr09  12/18/09  8557 Birmingham Hi
+
+230107 ENGLISH 9A      5.0  CSS  Gr10  08/13/09  8557 Birmingham Hi
+230108 ENGLISH 9B      5.0  CSS  Gr10  08/13/09  8557 Birmingham Hi
+
+230108 ENGLISH 9B      5.0  FUE  Gr09  06/19/09  8557 Birmingham Hi
+256012 SPANISH 1B      5.0  BEE  Gr09  06/19/09  8557 Birmingham Hi
+310302 ALGEBRA 1B      5.0  FUU  Gr09  06/19/09  8557 Birmingham Hi
+330106 ADV PE 1B       5.0  FUU  Gr09  06/19/09  8557 Birmingham Hi
+360702 BIOLOGY B       5.0  CUS  Gr09  06/19/09  8557 Birmingham Hi
+420107 LIFE SKLS 21ST  5.0  FUU  Gr09  06/19/09  8557 Birmingham Hi
+
+230107 ENGLISH 9A      5.0  FUU  Gr09  02/06/09  8557 Birmingham Hi
+256011 SPANISH 1A      5.0  BEE  Gr09  02/06/09  8557 Birmingham Hi
+260103 HEALTH SH       5.0  DSS  Gr09  02/06/09  8557 Birmingham Hi
+310301 ALGEBRA 1A      5.0  DUU  Gr09  02/06/09  8557 Birmingham Hi
+330705 BASKETBALL      5.0  AEE  Gr09  02/06/09  8557 Birmingham Hi
+360701 BIOLOGY A       5.0  DUU  Gr09  02/06/09  8557 Birmingham Hi
+
+180103 INTRO COMP      5.0  CSS  Gr08  06/19/08  8142 Fulton Col Prep
+230106 ENGLISH 8B      5.0  DUU  Gr08  06/19/08  8142 Fulton Col Prep
+310318 ALGEBRA READ B  5.0  CSS  Gr08  06/19/08  8142 Fulton Col Prep
+330104 INT PE B        5.0  DSS  Gr08  06/19/08  8142 Fulton Col Prep
+360106 SCIENCE 8B      5.0  CEE  Gr08  06/19/08  8142 Fulton Col Prep
+370126 US HIST G&C B   5.0  FUS  Gr08  06/19/08  8142 Fulton Col Prep
+420103 HOMEROOM 8      1.0  CSS  Gr08  06/19/08  8142 Fulton Col Prep
+
+200101 GEN ART         5.0  AEE  Gr08  02/01/08  8142 Fulton Col Prep
+230105 ENGLISH 8A      5.0  DUU  Gr08  02/01/08  8142 Fulton Col Prep
+310317 ALGEBRA READ A  5.0  BEE  Gr08  02/01/08  8142 Fulton Col Prep
+330103 INT PE A        5.0  CSS  Gr08  02/01/08  8142 Fulton Col Prep
+360105 SCIENCE 8A      5.0  BEE  Gr08  02/01/08  8142 Fulton Col Prep
+370125 US HIST G&C A   5.0  FUS  Gr08  02/01/08  8142 Fulton Col Prep
+420103 HOMEROOM 8      1.0  CSU  Gr08  02/01/08  8142 Fulton Col Prep
+
+230104 ENGLISH 7B      5.0  BSS  Gr07  06/20/07  8142 Fulton Col Prep
+330102 BEG PE B        5.0  AEE  Gr07  06/20/07  8142 Fulton Col Prep
+360103 SCIENCE 7       5.0  BSS  Gr07  06/20/07  8142 Fulton Col Prep
+370124 WHG: MED/MOD B  5.0  DUU  Gr07  06/20/07  8142 Fulton Col Prep
+420103 HOMEROOM 7      1.0  NEE  Gr07  06/20/07  8142 Fulton Col Prep
+494810 CAREER AWARE B  5.0  BSS  Gr07  06/20/07  8142 Fulton Col Prep
+
+Date Printed: 07/15/10 
+
+
+TR10        Courses Completed - Verified 02/03/09                  ID 543221M062
+
+Name: ADAMS, JOHN QUINCY         Birth: 03/04/24  Sex: M  Room:  103   RecNr: 4321
+School: 8557     Grade: 11     Track: A         Spc Attnd Cat:       %Aprn: 100%
+E-Code: E1    E-School: 8557   E-Dte:  9/13/10  Status: Active
+
+256013 SPANISH 2A      5.0  BSS  Gr11  06/29/10  8557 Birmingham Hi
+
+230110 H ENGLISH 10B   5.0  AEU  Gr10  05/28/10  8557 Birmingham Hi
+256014 SPANISH 2B      5.0  AES  Gr10  05/28/10  8557 Birmingham Hi
+310402 GEOMETRY B      5.0  AES  Gr10  05/28/10  8557 Birmingham Hi
+330205 ADV COND        5.0  AEE  Gr10  05/28/10  8557 Birmingham Hi
+361402 CHEMISTRY B     5.0  AES  Gr10  05/28/10  8557 Birmingham Hi
+370128 H WHG:MOD WL B  5.0  BSS  Gr10  05/28/10  8557 Birmingham Hi
+
+230109 H ENGLISH 10A   5.0  AEU  Gr10  12/18/09  8557 Birmingham Hi
+256013 SPANISH 2A      5.0  DUS  Gr10  12/18/09  8557 Birmingham Hi
+310401 GEOMETRY A      5.0  BEE  Gr10  12/18/09  8557 Birmingham Hi
+330705 BASKETBALL      5.0  AEE  Gr10  12/18/09  8557 Birmingham Hi
+361401 CHEMISTRY A     5.0  CSS  Gr10  12/18/09  8557 Birmingham Hi
+370127 H WHG:MOD WL A  5.0  CSS  Gr10  12/18/09  8557 Birmingham Hi
+
+260103 HEALTH SH       5.0  AES  Gr10  08/13/09  8557 Birmingham Hi
+420107 LIFE SKLS 21ST  5.0  AES  Gr10  08/13/09  8557 Birmingham Hi
+
+200504 PHOTO 1B        5.0  CSS  Gr09  06/19/09  8558 DPearlJournStud
+230108 ENGLISH 9B      5.0  CUU  Gr09  06/19/09  8558 DPearlJournStud
+256012 SPANISH 1B      5.0  BSS  Gr09  06/19/09  8558 DPearlJournStud
+310302 ALGEBRA 1B      5.0  BSE  Gr09  06/19/09  8558 DPearlJournStud
+330106 ADV PE 1B       5.0  AEE  Gr09  06/19/09  8558 DPearlJournStud
+360702 BIOLOGY B       5.0  BSE  Gr09  06/19/09  8558 DPearlJournStud
+
+200503 PHOTO 1A        5.0  CSU  Gr09  02/06/09  8558 DPearlJournStud
+230107 ENGLISH 9A      5.0  BSU  Gr09  02/06/09  8558 DPearlJournStud
+256011 SPANISH 1A      5.0  ASS  Gr09  02/06/09  8558 DPearlJournStud
+310301 ALGEBRA 1A      5.0  BSE  Gr09  02/06/09  8558 DPearlJournStud
+330705 BASKETBALL      5.0  AEE  Gr09  02/06/09  8558 DPearlJournStud
+360701 BIOLOGY A       5.0  BSE  Gr09  02/06/09  8558 DPearlJournStud
+
+200101 GEN ART         5.0  AES  Gr08  06/19/08  8360 Porter Gftd Mag
+230106 H ENGLISH 8B    5.0  CSS  Gr08  06/19/08  8360 Porter Gftd Mag
+310302 H ALGEBRA 1B    5.0  DSS  Gr08  06/19/08  8360 Porter Gftd Mag
+330104 INT PE B        5.0  AEE  Gr08  06/19/08  8360 Porter Gftd Mag
+360106 H SCIENCE 8B    5.0  CSS  Gr08  06/19/08  8360 Porter Gftd Mag
+370126 H US HST G&C B  5.0  CSS  Gr08  06/19/08  8360 Porter Gftd Mag
+420103 HOMEROOM        0.0  NES  Gr08  06/19/08  8360 Porter Gftd Mag
+
+200101 GEN ART         5.0  AEE  Gr08  02/01/08  8360 Porter Gftd Mag
+230105 H ENGLISH 8A    5.0  BSE  Gr08  02/01/08  8360 Porter Gftd Mag
+310301 H ALGEBRA 1A    5.0  CUE  Gr08  02/01/08  8360 Porter Gftd Mag
+330103 INT PE A        5.0  AEE  Gr08  02/01/08  8360 Porter Gftd Mag
+360105 H SCIENCE 8A    5.0  BUS  Gr08  02/01/08  8360 Porter Gftd Mag
+370125 H US HST G&C A  5.0  BSS  Gr08  02/01/08  8360 Porter Gftd Mag
+420103 HOMEROOM        0.0  NSS  Gr08  02/01/08  8360 Porter Gftd Mag
+
+230104 H ENGLISH 7B    5.0  CSS  Gr07  06/20/07  8360 Porter Gftd Mag
+260101 HEALTH JH       5.0  BES  Gr07  06/20/07  8360 Porter Gftd Mag
+310104 H MATH 7B       5.0  CUS  Gr07  06/20/07  8360 Porter Gftd Mag
+330102 BEG PE B        5.0  BEE  Gr07  06/20/07  8360 Porter Gftd Mag
+370124 H WHG:MED/MD B  5.0  BSU  Gr07  06/20/07  8360 Porter Gftd Mag
+420103 HOMEROOM        0.0  NUU  Gr07  06/20/07  8360 Porter Gftd Mag
+460602 LEADER JH B     5.0  CSE  Gr07  06/20/07  8360 Porter Gftd Mag
+
+230103 ENGLISH 7A      5.0  BSS  Gr07  02/02/07  8360 Porter Gftd Mag
+310103 MATH 7A         5.0  BEE  Gr07  02/02/07  8360 Porter Gftd Mag
+330101 BEG PE A        5.0  AEE  Gr07  02/02/07  8360 Porter Gftd Mag
+360103 SCIENCE 7       5.0  BEE  Gr07  02/02/07  8360 Porter Gftd Mag
+370123 H WHG:MED/MD A  5.0  BEE  Gr07  02/02/07  8360 Porter Gftd Mag
+420103 HOMEROOM 7M     0.0  NES  Gr07  02/02/07  8360 Porter Gftd Mag
+460601 LEADER JH A     5.0  BSE  Gr07  02/02/07  8360 Porter Gftd Mag
+
+230102 H ENG/READ 6B   5.0  BEE  Gr06  06/22/06  8360 Porter Gftd Mag
+292501 EXPL ELECT      2.5  BSE  Gr06  06/22/06  8360 Porter Gftd Mag
+310102 H MATH 6B       5.0  CEE  Gr06  06/22/06  8360 Porter Gftd Mag
+330120 INTRO PE B      5.0  BEE  Gr06  06/22/06  8360 Porter Gftd Mag
+360102 H SCI/HLTH 6B   5.0  BEE  Gr06  06/22/06  8360 Porter Gftd Mag
+370122 H WHG:AN CIV B  5.0  BEE  Gr06  06/22/06  8360 Porter Gftd Mag
+420103 HOMEROOM        0.0  NEE  Gr06  06/22/06  8360 Porter Gftd Mag
+
+292501 EXPL ELECT      2.5  AEE  Gr06  04/07/06  8360 Porter Gftd Mag
+
+230101 H ENG/READ 6A   5.0  BEE  Gr06  02/03/06  8360 Porter Gftd Mag
+292501 EXPL ELECT      2.5  AEE  Gr06  02/03/06  8360 Porter Gftd Mag
+310101 H MATH 6A       5.0  CEE  Gr06  02/03/06  8360 Porter Gftd Mag
+330119 INTRO PE A      5.0  AEE  Gr06  02/03/06  8360 Porter Gftd Mag
+360101 H SCI/HLTH 6A   5.0  CSE  Gr06  02/03/06  8360 Porter Gftd Mag
+370121 H WHG:AN CIV A  5.0  BEE  Gr06  02/03/06  8360 Porter Gftd Mag
+420103 HOMEROOM 6TH    0.0  NEE  Gr06  02/03/06  8360 Porter Gftd Mag
+
+292501 EXPL ELECT      2.5  AEE  Gr06  11/10/05  8360 Porter Gftd Mag
+
+Date Printed: 07/15/10 
